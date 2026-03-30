@@ -1,0 +1,42 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { initDatabase, getUserByEmail, getAllUsers, getUserById } from '@/lib/db';
+
+// Initialize database on first request
+initDatabase();
+
+export async function GET() {
+  try {
+    const users = getAllUsers();
+    return NextResponse.json({ users });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { email } = body;
+
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+
+    const user = getUserByEmail(email);
+    
+    if (!user) {
+      return NextResponse.json({ error: 'User not found. Use a demo user email.' }, { status: 404 });
+    }
+
+    // Simple demo auth - in production, use proper authentication
+    return NextResponse.json({ 
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      }
+    });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to login' }, { status: 500 });
+  }
+}
