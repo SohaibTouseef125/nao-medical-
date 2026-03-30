@@ -1,11 +1,13 @@
 'use client';
 
-import { motion, HTMLMotionProps } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { ReactNode } from 'react';
 
-export interface CardProps extends HTMLMotionProps<'div'> {
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'elevated' | 'outlined';
   padding?: 'none' | 'sm' | 'md' | 'lg';
   hoverable?: boolean;
+  children?: ReactNode;
 }
 
 export function Card({
@@ -35,12 +37,15 @@ export function Card({
     ? 'hover:shadow-md hover:border-gray-300 hover:-translate-y-0.5 cursor-pointer'
     : '';
 
+  // Extract conflicting props that motion doesn't need
+  const { onDrag, onDragStart, onDragEnd, ...restProps } = props as any;
+
   return (
     <motion.div
       className={`${baseStyles} ${variants[variant]} ${paddings[padding]} ${hoverStyles} ${className}`}
       whileHover={hoverable ? { scale: 1.01 } : undefined}
       whileTap={hoverable ? { scale: 0.99 } : undefined}
-      {...props}
+      {...restProps}
     >
       {children}
     </motion.div>
@@ -51,7 +56,7 @@ export function CardHeader({
   className = '',
   children,
   ...props
-}: HTMLMotionProps<'div'>) {
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={`flex items-center justify-between mb-4 ${className}`}
@@ -66,7 +71,7 @@ export function CardTitle({
   className = '',
   children,
   ...props
-}: HTMLMotionProps<'h3'>) {
+}: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
       className={`text-lg font-semibold text-gray-900 ${className}`}
@@ -81,7 +86,7 @@ export function CardDescription({
   className = '',
   children,
   ...props
-}: HTMLMotionProps<'p'>) {
+}: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p
       className={`text-sm text-gray-500 ${className}`}
@@ -96,7 +101,7 @@ export function CardContent({
   className = '',
   children,
   ...props
-}: HTMLMotionProps<'div'>) {
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={`${className}`} {...props}>
       {children}
@@ -108,7 +113,7 @@ export function CardFooter({
   className = '',
   children,
   ...props
-}: HTMLMotionProps<'div'>) {
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={`flex items-center gap-2 pt-4 border-t border-gray-100 ${className}`}

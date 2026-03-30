@@ -1,15 +1,16 @@
 'use client';
 
-import { motion, HTMLMotionProps } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { forwardRef } from 'react';
+import { forwardRef, ReactNode } from 'react';
 
-export interface ButtonProps extends HTMLMotionProps<'button'> {
+export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'size'> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
+  children?: ReactNode;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -23,6 +24,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       children,
       className = '',
       disabled,
+      onClick,
+      type = 'button',
       ...props
     },
     ref
@@ -49,14 +52,19 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       lg: 'px-6 py-3 text-base gap-2.5',
     };
 
+    // Extract conflicting props that motion doesn't need
+    const { onDrag, onDragStart, onDragEnd, ...restProps } = props as any;
+
     return (
       <motion.button
         ref={ref}
+        type={type}
         className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
         whileHover={{ scale: disabled || isLoading ? 1 : 1.02 }}
         whileTap={{ scale: disabled || isLoading ? 1 : 0.98 }}
         disabled={disabled || isLoading}
-        {...props}
+        onClick={onClick}
+        {...restProps}
       >
         {isLoading && (
           <Loader2 className="w-4 h-4 animate-spin" />

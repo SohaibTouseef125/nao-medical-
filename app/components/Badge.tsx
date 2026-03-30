@@ -1,10 +1,12 @@
 'use client';
 
-import { motion, HTMLMotionProps } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { ReactNode } from 'react';
 
-export interface BadgeProps extends HTMLMotionProps<'span'> {
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info';
   size?: 'sm' | 'md';
+  children?: ReactNode;
 }
 
 export function Badge({
@@ -31,13 +33,16 @@ export function Badge({
     md: 'px-2.5 py-1 text-xs',
   };
 
+  // Extract conflicting props that motion doesn't need
+  const { onDrag, onDragStart, onDragEnd, ...restProps } = props as any;
+
   return (
     <motion.span
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.2 }}
-      {...props}
+      {...restProps}
     >
       {children}
     </motion.span>

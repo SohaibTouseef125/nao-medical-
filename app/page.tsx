@@ -835,7 +835,6 @@ function AppContent() {
                   className="editor-content w-full min-h-[500px] p-6 focus:outline-none prose prose-sm sm:prose-base max-w-none"
                   onInput={handleEditorInput}
                   suppressContentEditableWarning
-                  placeholder="Start typing your document..."
                 />
               </Card>
 
