@@ -55,13 +55,6 @@ interface Share {
   permission: string;
 }
 
-// Demo users for login
-const DEMO_USERS = [
-  { id: 'user1', email: 'alice@example.com', name: 'Alice Johnson' },
-  { id: 'user2', email: 'bob@example.com', name: 'Bob Smith' },
-  { id: 'user3', email: 'carol@example.com', name: 'Carol Williams' },
-];
-
 function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [documents, setDocuments] = useState<{ owned: Document[]; shared: Document[] }>({ owned: [], shared: [] });
@@ -79,6 +72,7 @@ function AppContent() {
   
   // Auth state
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [loginEmail, setLoginEmail] = useState('');
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   
@@ -474,45 +468,35 @@ function AppContent() {
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ duration: 0.2 }}
                   >
-                    {/* Demo Users */}
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-gray-700 mb-3">
-                        Quick login with demo user
-                      </p>
-                      {DEMO_USERS.map((u, index) => (
-                        <motion.button
-                          key={u.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          onClick={() => handleLogin(u.email)}
-                          disabled={loading}
-                          className="w-full p-3 text-left border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 disabled:opacity-50 group cursor-pointer"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Avatar name={u.name} size="sm" />
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900 group-hover:text-blue-700 transition-colors text-sm">
-                                {u.name}
-                              </div>
-                              <div className="text-xs text-gray-500 group-hover:text-blue-600 transition-colors">
-                                {u.email}
-                              </div>
-                            </div>
-                            <motion.div
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              whileHover={{ x: 4 }}
-                            >
-                              <Check className="w-4 h-4 text-blue-600" />
-                            </motion.div>
-                          </div>
-                        </motion.button>
-                      ))}
-                    </div>
+                    <form 
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleLogin(loginEmail);
+                      }} 
+                      className="space-y-4"
+                    >
+                      <Input
+                        label="Email Address"
+                        type="email"
+                        placeholder="john@example.com"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        disabled={loading}
+                        required
+                      />
+                      <Button
+                        type="submit"
+                        disabled={loading || !loginEmail}
+                        className="w-full mt-4"
+                        isLoading={loading}
+                      >
+                        {loading ? 'Logging in...' : 'Login'}
+                      </Button>
+                    </form>
 
                     <div className="mt-6 text-center">
                       <p className="text-sm text-gray-500">
-                        Or{' '}
+                        Don't have an account?{' '}
                         <button
                           onClick={() => setAuthMode('register')}
                           className="text-blue-600 font-medium hover:text-blue-700 hover:underline cursor-pointer"
@@ -576,28 +560,6 @@ function AppContent() {
             </div>
 
             {/* Info box */}
-            {authMode === 'login' && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="mx-6 mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
-                    <Users className="w-4 h-4 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-amber-800 mb-1">
-                      Demo Accounts
-                    </p>
-                    <p className="text-xs text-amber-700">
-                      Login as Alice to create documents, then share with Bob or Carol to test collaboration.
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
           </Card>
         </motion.div>
       </div>
@@ -908,7 +870,6 @@ function AppContent() {
             onChange={(e) => setShareEmail(e.target.value)}
             placeholder="bob@example.com"
             label="Add user by email"
-            helperText="Available: alice@example.com, bob@example.com, carol@example.com"
             disabled={shareLoading}
             rightIcon={shareLoading ? <Spinner size="sm" /> : undefined}
           />

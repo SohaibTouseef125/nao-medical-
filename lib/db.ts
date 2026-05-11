@@ -58,15 +58,8 @@ export default db;
 
 // Helper functions
 export function initDatabase() {
-  // Seed demo users if not exists
-  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-  if (userCount.count === 0) {
-    const insertUser = db.prepare('INSERT INTO users (id, email, name) VALUES (?, ?, ?)');
-    insertUser.run('user1', 'alice@example.com', 'Alice Johnson');
-    insertUser.run('user2', 'bob@example.com', 'Bob Smith');
-    insertUser.run('user3', 'carol@example.com', 'Carol Williams');
-    console.log('Seeded demo users');
-  }
+  // Database initialization logic if needed
+  console.log('Database initialized');
 }
 
 export function getUserById(id: string) {

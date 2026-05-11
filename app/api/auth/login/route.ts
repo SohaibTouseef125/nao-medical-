@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const user = getUserByEmail(email);
     
     if (!user) {
-      return NextResponse.json({ error: 'User not found. Use a demo user email.' }, { status: 404 });
+      return NextResponse.json({ error: 'User not found. Please register first.' }, { status: 404 });
     }
 
     // Simple demo auth - in production, use proper authentication
