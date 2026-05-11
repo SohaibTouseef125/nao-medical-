@@ -22,11 +22,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'User ID required' }, { status: 400 });
       }
       
-      if (!canAccessDocument(documentId, userId)) {
+      const hasAccess = await canAccessDocument(documentId, userId);
+      if (!hasAccess) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
       
-      const doc = getDocumentById(documentId);
+      const doc = await getDocumentById(documentId);
       return NextResponse.json({ document: doc });
     }
 
@@ -34,8 +35,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    const owned = getDocumentsByOwner(userId);
-    const shared = getSharedDocuments(userId);
+    const owned = await getDocumentsByOwner(userId);
+    const shared = await getSharedDocuments(userId);
 
     return NextResponse.json({ 
       documents: {
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
+    console.error('Fetch documents error:', error);
     return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 });
   }
 }
@@ -58,17 +60,13 @@ export async function POST(request: NextRequest) {
     }
 
     const id = uuidv4();
-    createDocument(id, title || 'Untitled Document', ownerId, content || '');
+    const doc = await createDocument(id, title || 'Untitled Document', ownerId, content || '');
 
     return NextResponse.json({ 
-      document: {
-        id,
-        title: title || 'Untitled Document',
-        content: content || '',
-        owner_id: ownerId
-      }
+      document: doc
     }, { status: 201 });
   } catch (error) {
+    console.error('Create document error:', error);
     return NextResponse.json({ error: 'Failed to create document' }, { status: 500 });
   }
 }
@@ -82,15 +80,17 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Document ID required' }, { status: 400 });
     }
 
-    if (!canAccessDocument(id, userId || '')) {
+    const hasAccess = await canAccessDocument(id, userId || '');
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    updateDocument(id, { title, content });
-    const updated = getDocumentById(id);
+    await updateDocument(id, { title, content });
+    const updated = await getDocumentById(id);
 
     return NextResponse.json({ document: updated });
   } catch (error) {
+    console.error('Update document error:', error);
     return NextResponse.json({ error: 'Failed to update document' }, { status: 500 });
   }
 }
@@ -105,7 +105,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Document ID required' }, { status: 400 });
     }
 
-    const doc = getDocumentById(id);
+    const doc = await getDocumentById(id);
     if (!doc) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
@@ -114,9 +114,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Only owner can delete document' }, { status: 403 });
     }
 
-    deleteDocument(id);
+    await deleteDocument(id);
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Delete document error:', error);
     return NextResponse.json({ error: 'Failed to delete document' }, { status: 500 });
   }
 }

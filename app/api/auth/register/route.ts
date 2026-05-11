@@ -3,10 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { initDatabase, getUserByEmail, createUser } from '@/lib/db';
 
 // Initialize database
-initDatabase();
+const initDbPromise = initDatabase();
 
 export async function POST(request: NextRequest) {
   try {
+    await initDbPromise;
     const body = await request.json();
     const { email, name } = body;
 
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = getUserByEmail(email);
+    const existingUser = await getUserByEmail(email);
     if (existingUser) {
       return NextResponse.json(
         { error: 'An account with this email already exists' },
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Create new user
     const id = uuidv4();
-    const user = createUser(id, email, name);
+    const user = await createUser(id, email, name);
 
     return NextResponse.json({
       user: {

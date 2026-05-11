@@ -1,168 +1,200 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+import { neon } from '@neondatabase/serverless';
 
-const dbPath = path.join(process.cwd(), 'data', 'app.db');
-
-// Ensure data directory exists
-import fs from 'fs';
-const dataDir = path.dirname(dbPath);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-
-const db = new Database(dbPath);
+const sql = neon(process.env.DATABASE_URL!);
 
 // Initialize schema
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+export async function initDatabase() {
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
 
-  CREATE TABLE IF NOT EXISTS documents (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL DEFAULT 'Untitled Document',
-    content TEXT DEFAULT '',
-    owner_id TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (owner_id) REFERENCES users(id)
-  );
+    await sql`
+      CREATE TABLE IF NOT EXISTS documents (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL DEFAULT 'Untitled Document',
+        content TEXT DEFAULT '',
+        owner_id TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_owner FOREIGN KEY (owner_id) REFERENCES users(id)
+      );
+    `;
 
-  CREATE TABLE IF NOT EXISTS document_shares (
-    id TEXT PRIMARY KEY,
-    document_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    permission TEXT DEFAULT 'read',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    UNIQUE(document_id, user_id)
-  );
+    await sql`
+      CREATE TABLE IF NOT EXISTS document_shares (
+        id TEXT PRIMARY KEY,
+        document_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        permission TEXT DEFAULT 'read',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_document FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id),
+        UNIQUE(document_id, user_id)
+      );
+    `;
 
-  CREATE TABLE IF NOT EXISTS uploads (
-    id TEXT PRIMARY KEY,
-    document_id TEXT,
-    filename TEXT NOT NULL,
-    original_name TEXT NOT NULL,
-    content_type TEXT,
-    size INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE SET NULL
-  );
-`);
-
-export default db;
-
-// Helper functions
-export function initDatabase() {
-  // Database initialization logic if needed
-  console.log('Database initialized');
-}
-
-export function getUserById(id: string) {
-  return db.prepare('SELECT * FROM users WHERE id = ?').get(id) as any;
-}
-
-export function getUserByEmail(email: string) {
-  return db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
-}
-
-export function createUser(id: string, email: string, name: string) {
-  const stmt = db.prepare('INSERT INTO users (id, email, name) VALUES (?, ?, ?)');
-  stmt.run(id, email, name);
-  return { id, email, name };
-}
-
-export function getAllUsers() {
-  return db.prepare('SELECT id, email, name FROM users').all() as any[];
-}
-
-export function createDocument(id: string, title: string, ownerId: string, content = '') {
-  const stmt = db.prepare('INSERT INTO documents (id, title, content, owner_id) VALUES (?, ?, ?, ?)');
-  return stmt.run(id, title, content, ownerId);
-}
-
-export function getDocumentById(id: string) {
-  return db.prepare('SELECT * FROM documents WHERE id = ?').get(id) as any;
-}
-
-export function updateDocument(id: string, updates: { title?: string; content?: string }) {
-  const fields: string[] = [];
-  const values: any[] = [];
-  
-  if (updates.title !== undefined) {
-    fields.push('title = ?');
-    values.push(updates.title);
+    await sql`
+      CREATE TABLE IF NOT EXISTS uploads (
+        id TEXT PRIMARY KEY,
+        document_id TEXT,
+        filename TEXT NOT NULL,
+        original_name TEXT NOT NULL,
+        content_type TEXT,
+        size INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_upload_doc FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE SET NULL
+      );
+    `;
+    
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
   }
-  if (updates.content !== undefined) {
-    fields.push('content = ?');
-    values.push(updates.content);
+}
+
+export async function getUserById(id: string) {
+  const result = await sql`SELECT * FROM users WHERE id = ${id}`;
+  return result[0] || null;
+}
+
+export async function getUserByEmail(email: string) {
+  const result = await sql`SELECT * FROM users WHERE email = ${email}`;
+  return result[0] || null;
+}
+
+export async function createUser(id: string, email: string, name: string) {
+  const result = await sql`
+    INSERT INTO users (id, email, name) 
+    VALUES (${id}, ${email}, ${name}) 
+    RETURNING *
+  `;
+  return result[0];
+}
+
+export async function getAllUsers() {
+  return await sql`SELECT id, email, name FROM users`;
+}
+
+export async function createDocument(id: string, title: string, ownerId: string, content = '') {
+  const result = await sql`
+    INSERT INTO documents (id, title, content, owner_id) 
+    VALUES (${id}, ${title}, ${content}, ${ownerId}) 
+    RETURNING *
+  `;
+  return result[0];
+}
+
+export async function getDocumentById(id: string) {
+  const result = await sql`SELECT * FROM documents WHERE id = ${id}`;
+  return result[0] || null;
+}
+
+export async function updateDocument(id: string, updates: { title?: string; content?: string }) {
+  if (updates.title !== undefined && updates.content !== undefined) {
+    return await sql`
+      UPDATE documents 
+      SET title = ${updates.title}, content = ${updates.content}, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ${id} 
+      RETURNING *
+    `;
+  } else if (updates.title !== undefined) {
+    return await sql`
+      UPDATE documents 
+      SET title = ${updates.title}, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ${id} 
+      RETURNING *
+    `;
+  } else if (updates.content !== undefined) {
+    return await sql`
+      UPDATE documents 
+      SET content = ${updates.content}, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ${id} 
+      RETURNING *
+    `;
   }
-  fields.push('updated_at = CURRENT_TIMESTAMP');
-  values.push(id);
-  
-  const stmt = db.prepare(`UPDATE documents SET ${fields.join(', ')} WHERE id = ?`);
-  return stmt.run(...values);
 }
 
-export function deleteDocument(id: string) {
-  return db.prepare('DELETE FROM documents WHERE id = ?').run(id);
+export async function deleteDocument(id: string) {
+  return await sql`DELETE FROM documents WHERE id = ${id}`;
 }
 
-export function getDocumentsByOwner(ownerId: string) {
-  return db.prepare('SELECT * FROM documents WHERE owner_id = ? ORDER BY updated_at DESC').all(ownerId) as any[];
+export async function getDocumentsByOwner(ownerId: string) {
+  return await sql`
+    SELECT * FROM documents 
+    WHERE owner_id = ${ownerId} 
+    ORDER BY updated_at DESC
+  `;
 }
 
-export function getSharedDocuments(userId: string) {
-  return db.prepare(`
+export async function getSharedDocuments(userId: string) {
+  return await sql`
     SELECT d.*, u.name as owner_name, ds.permission
     FROM documents d
     JOIN document_shares ds ON d.id = ds.document_id
     JOIN users u ON d.owner_id = u.id
-    WHERE ds.user_id = ?
+    WHERE ds.user_id = ${userId}
     ORDER BY d.updated_at DESC
-  `).all(userId) as any[];
+  `;
 }
 
-export function shareDocument(shareId: string, documentId: string, userId: string, permission = 'read') {
-  const stmt = db.prepare('INSERT OR REPLACE INTO document_shares (id, document_id, user_id, permission) VALUES (?, ?, ?, ?)');
-  return stmt.run(shareId, documentId, userId, permission);
+export async function shareDocument(shareId: string, documentId: string, userId: string, permission = 'read') {
+  return await sql`
+    INSERT INTO document_shares (id, document_id, user_id, permission) 
+    VALUES (${shareId}, ${documentId}, ${userId}, ${permission})
+    ON CONFLICT (document_id, user_id) 
+    DO UPDATE SET permission = EXCLUDED.permission
+    RETURNING *
+  `;
 }
 
-export function removeShare(documentId: string, userId: string) {
-  return db.prepare('DELETE FROM document_shares WHERE document_id = ? AND user_id = ?').run(documentId, userId);
+export async function removeShare(documentId: string, userId: string) {
+  return await sql`
+    DELETE FROM document_shares 
+    WHERE document_id = ${documentId} AND user_id = ${userId}
+  `;
 }
 
-export function getDocumentShares(documentId: string) {
-  return db.prepare(`
+export async function getDocumentShares(documentId: string) {
+  return await sql`
     SELECT ds.*, u.email, u.name
     FROM document_shares ds
     JOIN users u ON ds.user_id = u.id
-    WHERE ds.document_id = ?
-  `).all(documentId) as any[];
+    WHERE ds.document_id = ${documentId}
+  `;
 }
 
-export function canAccessDocument(documentId: string, userId: string): boolean {
-  const doc = getDocumentById(documentId);
+export async function canAccessDocument(documentId: string, userId: string): Promise<boolean> {
+  const doc = await getDocumentById(documentId);
   if (!doc) return false;
   if (doc.owner_id === userId) return true;
   
-  const share = db.prepare('SELECT * FROM document_shares WHERE document_id = ? AND user_id = ?').get(documentId, userId);
-  return !!share;
+  const shares = await sql`
+    SELECT * FROM document_shares 
+    WHERE document_id = ${documentId} AND user_id = ${userId}
+  `;
+  return shares.length > 0;
 }
 
-export function createUpload(id: string, documentId: string | null, filename: string, originalName: string, contentType: string, size: number) {
-  const stmt = db.prepare('INSERT INTO uploads (id, document_id, filename, original_name, content_type, size) VALUES (?, ?, ?, ?, ?, ?)');
-  return stmt.run(id, documentId, filename, originalName, contentType, size);
+export async function createUpload(id: string, documentId: string | null, filename: string, originalName: string, contentType: string, size: number) {
+  const result = await sql`
+    INSERT INTO uploads (id, document_id, filename, original_name, content_type, size) 
+    VALUES (${id}, ${documentId}, ${filename}, ${originalName}, ${contentType}, ${size}) 
+    RETURNING *
+  `;
+  return result[0];
 }
 
-export function getUploadById(id: string) {
-  return db.prepare('SELECT * FROM uploads WHERE id = ?').get(id) as any;
+export async function getUploadById(id: string) {
+  const result = await sql`SELECT * FROM uploads WHERE id = ${id}`;
+  return result[0] || null;
 }
 
-export function getUploadsByDocument(documentId: string) {
-  return db.prepare('SELECT * FROM uploads WHERE document_id = ?').all(documentId) as any[];
+export async function getUploadsByDocument(documentId: string) {
+  return await sql`SELECT * FROM uploads WHERE document_id = ${documentId}`;
 }

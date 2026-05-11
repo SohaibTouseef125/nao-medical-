@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initDatabase, getUserByEmail, getAllUsers, getUserById } from '@/lib/db';
 
 // Initialize database on first request
-initDatabase();
+const initDbPromise = initDatabase();
 
 export async function GET() {
   try {
-    const users = getAllUsers();
+    await initDbPromise;
+    const users = await getAllUsers();
     return NextResponse.json({ users });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
@@ -15,6 +16,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    await initDbPromise;
     const body = await request.json();
     const { email } = body;
 
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    const user = getUserByEmail(email);
+    const user = await getUserByEmail(email);
     
     if (!user) {
       return NextResponse.json({ error: 'User not found. Please register first.' }, { status: 404 });

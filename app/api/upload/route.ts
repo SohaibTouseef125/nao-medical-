@@ -44,10 +44,12 @@ export async function POST(request: NextRequest) {
     const filepath = path.join(UPLOADS_DIR, filename);
     
     const buffer = Buffer.from(await file.arrayBuffer());
+    // Note: This will fail on Vercel production due to read-only filesystem.
+    // In production, use AWS S3 or similar object storage.
     fs.writeFileSync(filepath, buffer);
 
     // Create upload record
-    createUpload(
+    await createUpload(
       uploadId,
       documentId || null,
       filename,
@@ -73,6 +75,7 @@ export async function POST(request: NextRequest) {
       }
     }, { status: 201 });
   } catch (error) {
+    console.error('Upload error:', error);
     return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
   }
 }
@@ -84,7 +87,7 @@ export async function GET(request: NextRequest) {
     const documentId = searchParams.get('documentId');
 
     if (uploadId) {
-      const upload = getUploadById(uploadId);
+      const upload = await getUploadById(uploadId);
       if (!upload) {
         return NextResponse.json({ error: 'Upload not found' }, { status: 404 });
       }
@@ -104,12 +107,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (documentId) {
-      const uploads = getUploadsByDocument(documentId);
+      const uploads = await getUploadsByDocument(documentId);
       return NextResponse.json({ uploads });
     }
 
     return NextResponse.json({ error: 'ID or documentId required' }, { status: 400 });
   } catch (error) {
+    console.error('Fetch upload error:', error);
     return NextResponse.json({ error: 'Failed to fetch upload' }, { status: 500 });
   }
 }

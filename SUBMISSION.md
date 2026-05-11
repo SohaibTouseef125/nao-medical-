@@ -1,156 +1,45 @@
-# Submission Checklist
+# Project Submission: Collaborative Docs
 
-## Candidate Information
-- **Name:** Sohaib Toussef
-- **Email:** muhammadsohaib2233344@gmail.com
-- **Assessment:** Nao Medical - Full Stack Developer
+## Overview
+This is a full-stack collaborative document management application built with Next.js 16. It allows users to create, edit, share, and auto-save documents in real-time.
 
-## Deliverables Included
+## Tech Stack
+- **Frontend & Backend**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Database**: Neon PostgreSQL (Serverless)
+- **Styling**: Tailwind CSS & Framer Motion
+- **Icons**: Lucide React
 
-### ✅ Source Code
-- Complete Next.js application in `collaborative-docs/`
-- All API routes, components, and database logic
+## Key Features
+1. **User Authentication**: Simple email-based login and registration.
+2. **Document Editor**: Rich-text editing with a custom toolbar (Bold, Italic, Lists).
+3. **Auto-save**: Content is automatically saved to the database with a 2-second debounce.
+4. **Document Sharing**: Users can share documents with others via email with specific permissions.
+5. **File Upload**: Supports `.txt` and `.md` file uploads, which are converted into editable documents.
+6. **Responsive Design**: Works on both desktop and mobile devices.
 
-### ✅ README.md
-- Local setup instructions
-- Run commands
-- Feature documentation
-- API endpoint reference
-- Demo account credentials
+## Setup Instructions
+1. **Clone the project** and install dependencies:
+   ```bash
+   npm install
+   ```
+2. **Environment Variables**:
+   Create a `.env` file in the root directory and add your Neon PostgreSQL connection string:
+   ```text
+   DATABASE_URL="your_neon_postgresql_connection_string"
+   ```
+3. **Run the application**:
+   ```bash
+   npm run dev
+   ```
+   The application will be available at `http://localhost:3000`. Database tables will be automatically created on the first request.
 
-### ✅ ARCHITECTURE.md
-- Technology choices explained
-- Architecture diagram
-- Data model documentation
-- Tradeoffs and prioritization
-- What was deprioritized and why
+## Architectural Decisions
+- **Migration to PostgreSQL**: Shifted from SQLite to Neon PostgreSQL to ensure compatibility with Vercel's serverless environment (avoiding read-only filesystem errors).
+- **Async Database Logic**: All database operations are asynchronous to handle cloud database latency efficiently.
+- **State Management**: Used React hooks (`useState`, `useEffect`, `useCallback`) for clean and predictable UI state.
+- **Modular Design**: Separated database logic (`lib/db.ts`), UI components (`components/`), and API logic (`app/api/`) for better maintainability.
 
-### ✅ AI_WORKFLOW.md
-- AI tools used (Qwen Code)
-- Where AI accelerated work
-- What AI output was modified/rejected
-- Verification approach
-
-### ✅ This File (SUBMISSION.md)
-- Complete checklist of all materials
-
-## Features Implemented
-
-### Core Requirements
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Create document | ✅ Working | Button in sidebar |
-| Rename document | ✅ Working | Click title in header |
-| Edit content | ✅ Working | Rich text editor |
-| Save/reopen | ✅ Working | Auto-save + manual |
-| Bold/Italic/Underline | ✅ Working | Toolbar buttons |
-| Headings | ✅ Working | H1, H2, H3 |
-| Lists | ✅ Working | Bullet & numbered |
-| File upload | ✅ Working | .txt, .md supported |
-| Share document | ✅ Working | By email |
-| Owned/shared view | ✅ Working | Separate sections |
-| Persistence | ✅ Working | SQLite database |
-| Demo auth | ✅ Working | 3 seeded users |
-| Automated tests | ✅ Working | Jest + db tests |
-
-### Stretch Goals (Not Implemented)
-- [ ] Real-time collaboration indicators
-- [ ] Commenting/suggestion mode
-- [ ] Document version history
-- [ ] Export to PDF/Markdown
-- [ ] Role-based permissions
-
-## What Is Working End-to-End
-
-1. **Login Flow** - Select demo user → Session stored → Dashboard loads
-2. **Document Creation** - Click new → Document created → Editor opens
-3. **Rich Text Editing** - Type → Format → Auto-saves
-4. **File Import** - Upload .txt/.md → Content parsed → New document created
-5. **Sharing** - Owner shares → Recipient sees in "Shared with Me" → Can edit
-6. **Persistence** - Create/edit → Refresh → Data preserved
-
-## What Is Incomplete/Partial
-
-1. **File Association** - Uploads create documents, but no attachment-to-existing-doc feature
-2. **Permission Levels** - Only "read" permission implemented, not enforced in UI
-3. **Error Recovery** - Basic error messages, no retry logic
-4. **Mobile Responsiveness** - Desktop-first, not optimized for mobile
-
-## What I Would Build Next (2-4 Hours)
-
-1. **Input Sanitization** - Add DOMPurify to prevent XSS in editor content
-2. **Document Search** - Add search/filter for document list
-3. **Loading States** - Better spinners/skeletons during async operations
-4. **Toast Notifications** - Success/error feedback instead of inline errors
-5. **Export Feature** - Download document as .txt or .md file
-
-## Test Accounts
-
-| User | Email | Use Case |
-|------|-------|----------|
-| Alice | alice@example.com | Primary user, creates docs |
-| Bob | bob@example.com | Share recipient |
-| Carol | carol@example.com | Additional user for testing |
-
-## How to Run Locally
-
-```bash
-cd collaborative-docs
-npm install
-npm run dev
-```
-
-Open http://localhost:3000
-
-## Video Walkthrough
-
-**Status:** To be recorded
-
-**Planned Outline:**
-1. Login as Alice (0:00-0:30)
-2. Create and edit document (0:30-1:30)
-3. Upload .md file (1:30-2:00)
-4. Share with Bob (2:00-2:30)
-5. Login as Bob, view shared doc (2:30-3:00)
-6. Architecture decisions (3:00-4:00)
-7. AI workflow discussion (4:00-5:00)
-
-## Files Structure
-
-```
-collaborative-docs/
-├── app/
-│   ├── api/
-│   │   ├── auth/login/route.ts
-│   │   ├── documents/route.ts
-│   │   ├── share/route.ts
-│   │   └── upload/route.ts
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx
-├── lib/
-│   └── db.ts
-├── __tests__/
-│   └── db.test.ts
-├── data/
-│   └── uploads/
-├── README.md
-├── ARCHITECTURE.md
-├── AI_WORKFLOW.md
-├── SUBMISSION.md
-├── package.json
-├── tsconfig.json
-└── jest.config.js
-```
-
-## Submission Notes
-
-- All code is original work with AI assistance
-- No paid dependencies required
-- Database auto-initializes on first run
-- Demo users seeded automatically
-
----
-
-**Submission Date:** March 28, 2026
-**Time Spent:** ~4-5 hours
+## Challenges & Solutions
+- **Vercel 500 Error**: Solved by migrating from a file-based SQLite database to a cloud-based PostgreSQL (Neon).
+- **Native Binary Issues**: Resolved LightningCSS build errors by re-installing environment-specific dependencies.
